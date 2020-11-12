@@ -7,6 +7,7 @@ from oandapyV20 import API
 from oandapyV20.endpoints import accounts
 from oandapyV20.endpoints import instruments
 from oandapyV20.endpoints.pricing import PricingInfo
+from oandapyV20.endpoints.pricing import PricingStream
 from oandapyV20.exceptions import V20Error
 
 import constants
@@ -109,3 +110,26 @@ class APIClient(object):
             raise
         
         return int(resp['candles'][0]['volume'])
+
+    def get_realtime_ticker(self, callback):
+        req = PricingStream(accountID=self.account_id, params={
+            'instruments': settings.product_code
+        })
+        try:
+            for resp in self.client.request(req):
+                if resp['type'] == 'PRICE':
+                    timestamp = datetime.timestamp(
+                        dateutil.parser.parse(resp['time'])
+                    )
+                    instrument = resp['instrument']
+                    bid = float(resp['bids'][0]['price'])
+                    ask = float(resp['asks'][0]['price'])
+                    volume = self.get_candle_volume()
+                    ticker = Ticker(instrument, timestamp, bid, ask, volume)
+                    callback(ticker)
+                # print(resp)
+
+        except V20Error as e:
+            logger.error(f'action=get_realtime_ticker error={e}')
+            raise
+            
