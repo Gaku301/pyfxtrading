@@ -6,6 +6,7 @@ import dateutil.parser
 from oandapyV20 import API
 from oandapyV20.endpoints import accounts
 from oandapyV20.endpoints import instruments
+from oandapyV20.endpoints import orders
 from oandapyV20.endpoints.pricing import PricingInfo
 from oandapyV20.endpoints.pricing import PricingStream
 from oandapyV20.exceptions import V20Error
@@ -20,6 +21,7 @@ class Balance(object):
     def __init__(self, currency, available):
         self.currency = currency
         self.avairable = available
+
 
 class Ticker(object):
     def __init__(self, product_code, timestamp, bid, ask, volume):
@@ -57,6 +59,16 @@ class Ticker(object):
         str_date = datetime.strftime(ticker_time, time_format)
         return datetime.strptime(str_date, time_format)
         
+
+class Order(object):
+    def __init__(self, product_code, side, units, order_type='MARKET', order_state=None, filling_transaction_id=None):
+        self.product_code = product_code
+        self.side = side
+        self.units = units
+        self.order_type = order_type
+        self.order_state = order_state
+        self.filling_transaction_id = filling_transaction_id
+
 
 class APIClient(object):
     def __init__(self, access_token, account_id, enviroment='practice'):
@@ -132,4 +144,24 @@ class APIClient(object):
         except V20Error as e:
             logger.error(f'action=get_realtime_ticker error={e}')
             raise
-            
+           
+    def send_order(self, order: Order):
+        if order.side == constants.BUY:
+            side = 1
+        elif order.side == constants.SELL:
+            side = -1
+        order_data = {
+            'order': {
+                'type': order.order_type,
+                'instrument': order.product_code,
+                'units': order.units * side
+            }
+        }
+        req = orders.OrderCreate(accountID=self.account_id, data=order_data)
+        try:
+            resp = self.client.request(req)
+            logger.info(f'action=send_order resp={resp}')
+        except V20Error as e:
+            logger.error(f'action=send_order error={e}')
+            raise
+
