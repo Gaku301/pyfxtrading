@@ -1,9 +1,9 @@
+import datetime
 import logging
 import sys
 
-from oanda.oanda import Order
-from oanda.oanda import APIClient
-
+import app.models
+from app.models.candle import UsdJpyBaseCandle1M
 import settings
 
 
@@ -11,19 +11,11 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 
 if __name__ == "__main__":
-    api_client = APIClient(settings.access_token, settings.account_id)
-  
-    order = Order(
-        product_code=settings.product_code,
-        side='BUY',
-        units=10,
-    )
 
-    trade = api_client.send_order(order)
+    # for i in range(200):
+    #     now1 = datetime.datetime(2000+i, 1, 2, 3, 4, 5)
+    #     UsdJpyBaseCandle1M.create(now1, 1.0, 2.0, 3.0, 4.0, 5)
 
-    import time
-    time.sleep(5)
-
-    trades = api_client.get_open_trade()
-    for t in trades:
-        api_client.trade_close(t.trade_id)
+    candles = UsdJpyBaseCandle1M.get_all_candles(3)
+    for candle in candles:
+        print(candle.value)
