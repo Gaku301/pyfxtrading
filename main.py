@@ -1,9 +1,10 @@
-import datetime
 import logging
 import sys
+from threading import Thread
 
 import app.models
-from app.models.candle import UsdJpyBaseCandle1M
+from app.controllers.streamdata import stream
+
 import settings
 
 
@@ -12,10 +13,11 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 if __name__ == "__main__":
 
-    # for i in range(200):
-    #     now1 = datetime.datetime(2000+i, 1, 2, 3, 4, 5)
-    #     UsdJpyBaseCandle1M.create(now1, 1.0, 2.0, 3.0, 4.0, 5)
+    # streamThread = Thread(target=stream.stream_ingestion_data)
+    # streamThread.start()
+    # streamThread.join()
 
-    candles = UsdJpyBaseCandle1M.get_all_candles(3)
-    for candle in candles:
-        print(candle.value)
+    from app.models.dfcandle import DataFrameCandle
+    df = DataFrameCandle(settings.product_code, settings.trade_duration)
+    df.set_all_candles(settings.past_period)
+    print(df.value)
