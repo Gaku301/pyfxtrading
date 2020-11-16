@@ -19,4 +19,11 @@ if __name__ == "__main__":
         units=10,
     )
 
-    api_client.send_order(order)
+    trade = api_client.send_order(order)
+
+    import time
+    time.sleep(5)
+
+    trades = api_client.get_open_trade()
+    for t in trades:
+        api_client.trade_close(t.trade_id)
