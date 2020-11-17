@@ -4,6 +4,7 @@ from threading import Thread
 
 import app.models
 from app.controllers.streamdata import stream
+from app.controllers.webserver import start
 
 import settings
 
@@ -13,11 +14,11 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 if __name__ == "__main__":
 
-    # streamThread = Thread(target=stream.stream_ingestion_data)
-    # streamThread.start()
-    # streamThread.join()
+    streamThread = Thread(target=stream.stream_ingestion_data)
+    serverThread = Thread(target=start)
 
-    from app.models.dfcandle import DataFrameCandle
-    df = DataFrameCandle(settings.product_code, settings.trade_duration)
-    df.set_all_candles(settings.past_period)
-    print(df.value)
+    streamThread.start()
+    serverThread.start()
+
+    streamThread.join()
+    serverThread.join()
