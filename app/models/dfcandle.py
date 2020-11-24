@@ -20,6 +20,11 @@ class Sma(Serializer):
     def __init__(self, period: int, values: list):
         self.period = period
         self.values = values
+
+class Ema(Serializer):
+    def __init__(self, period: int, values: list):
+        self.period = period
+        self.values = values
         
 
 class DataFrameCandle(object):
@@ -30,6 +35,7 @@ class DataFrameCandle(object):
         self.candle_cls = factory_candle_class(self.product_code, self.duration)
         self.candles = []
         self.smas = []
+        self.emas = []
 
     def set_all_candles(self, limit=1000):
         self.candles = self.candle_cls.get_all_candles(limit)
@@ -41,7 +47,8 @@ class DataFrameCandle(object):
             'product_code': self.product_code,
             'duration': self.duration,
             'candles': [c.value for c in self.candles],
-            'smas': empty_to_none([c.value for c in self.smas])
+            'smas': empty_to_none([c.value for c in self.smas]),
+            'emas': empty_to_none([c.value for c in self.emas])
         }
         
     @property
@@ -85,5 +92,14 @@ class DataFrameCandle(object):
             values = talib.SMA(np.asarray(self.closes), period)
             sma = Sma(period,nan_to_zero(values).tolist())
             self.smas.append(sma)
+            return True
+        return False
+
+    def add_ema(self, period: int):
+
+        if len(self.closes) > period:
+            values = talib.EMA(np.asarray(self.closes), period)
+            ema = Ema(period,nan_to_zero(values).tolist())
+            self.emas.append(ema)
             return True
         return False
