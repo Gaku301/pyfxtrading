@@ -25,6 +25,14 @@ class Ema(Serializer):
     def __init__(self, period: int, values: list):
         self.period = period
         self.values = values
+
+class BBands(Serializer):
+    def __init__(self, n: int, k: float, up: list, mid: list, down: list):
+        self.n = n
+        self.k = k
+        self.up = up
+        self.mid = mid
+        self.down = down
         
 
 class DataFrameCandle(object):
@@ -36,6 +44,7 @@ class DataFrameCandle(object):
         self.candles = []
         self.smas = []
         self.emas = []
+        self.bbands = BBands(0, 0, [], [],[])
 
     def set_all_candles(self, limit=1000):
         self.candles = self.candle_cls.get_all_candles(limit)
@@ -48,7 +57,8 @@ class DataFrameCandle(object):
             'duration': self.duration,
             'candles': [c.value for c in self.candles],
             'smas': empty_to_none([c.value for c in self.smas]),
-            'emas': empty_to_none([c.value for c in self.emas])
+            'emas': empty_to_none([c.value for c in self.emas]),
+            'bbands': self.bbands.value,
         }
         
     @property
@@ -101,5 +111,15 @@ class DataFrameCandle(object):
             values = talib.EMA(np.asarray(self.closes), period)
             ema = Ema(period,nan_to_zero(values).tolist())
             self.emas.append(ema)
+            return True
+        return False
+
+    def add_bbands(self, n:int, k:float):
+        if n <= len(self.closes):
+            up, mid, down = talib.BBANDS(np.asarray(self.closes), n, k, k, 0)
+            up_list = nan_to_zero(up).tolist()
+            mid_list = nan_to_zero(mid).tolist()
+            down_list = nan_to_zero(down).tolist()
+            self.bbands = BBands(n, k, up_list, mid_list, down_list)
             return True
         return False
