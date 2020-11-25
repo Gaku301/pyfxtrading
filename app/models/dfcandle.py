@@ -43,6 +43,16 @@ class Rsi(Serializer):
         self.period = period
         self.values = values
 
+        
+class Macd(Serializer):
+    def __init__(self, fast_period:int, slow_period:int, signal_period:int, macd:list, macd_signal:list, macd_hist:list):
+        self.fast_period = fast_period
+        self.slow_period = slow_period
+        self.signal_period = signal_period
+        self.macd = macd
+        self.macd_signal = macd_signal
+        self.macd_hist = macd_hist
+
 
 class IchimokuCloud(Serializer):
     def __init__(self, tenkan: list, kijun: list, senkou_a: list,
@@ -66,6 +76,7 @@ class DataFrameCandle(object):
         self.bbands = BBands(0, 0, [], [],[])
         self.ichimoku_cloud = IchimokuCloud([], [], [], [], [])
         self.rsi = Rsi(0, [])
+        self.macd = Macd(0, 0, 0, [], [], [])
 
     def set_all_candles(self, limit=1000):
         self.candles = self.candle_cls.get_all_candles(limit)
@@ -82,6 +93,7 @@ class DataFrameCandle(object):
             'bbands': self.bbands.value,
             'ichimoku': self.ichimoku_cloud.value,
             'rsi': self.rsi.value,
+            'macd': self.macd.value,
         }
         
     @property
@@ -162,4 +174,20 @@ class DataFrameCandle(object):
             self.rsi = rsi
             return True
         return False
+
+    def add_macd(self, fast_period:int, slow_period:int, signal_period:int):
+        if len(self.candles) > 1:
+            macd, macd_signal, macd_hist = talib.MACD(
+                np.asarray(self.closes), fast_period, slow_period, signal_period
+            )
+            macd_list = nan_to_zero(macd).tolist()
+            macd_signal_list = nan_to_zero(macd_signal).tolist()
+            macd_hist_list = nan_to_zero(macd_hist).tolist()
+            self.macd = Macd(
+                fast_period, slow_period, signal_period, macd_list, macd_signal_list, macd_hist_list
+            )
+            return True
+        return False
+
+    
 
