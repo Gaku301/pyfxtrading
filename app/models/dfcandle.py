@@ -22,10 +22,12 @@ class Sma(Serializer):
         self.period = period
         self.values = values
 
+
 class Ema(Serializer):
     def __init__(self, period: int, values: list):
         self.period = period
         self.values = values
+
 
 class BBands(Serializer):
     def __init__(self, n: int, k: float, up: list, mid: list, down: list):
@@ -34,6 +36,13 @@ class BBands(Serializer):
         self.up = up
         self.mid = mid
         self.down = down
+
+
+class Rsi(Serializer):
+    def __init__(self, period: int, values: list):
+        self.period = period
+        self.values = values
+
 
 class IchimokuCloud(Serializer):
     def __init__(self, tenkan: list, kijun: list, senkou_a: list,
@@ -56,6 +65,7 @@ class DataFrameCandle(object):
         self.emas = []
         self.bbands = BBands(0, 0, [], [],[])
         self.ichimoku_cloud = IchimokuCloud([], [], [], [], [])
+        self.rsi = Rsi(0, [])
 
     def set_all_candles(self, limit=1000):
         self.candles = self.candle_cls.get_all_candles(limit)
@@ -71,6 +81,7 @@ class DataFrameCandle(object):
             'emas': empty_to_none([c.value for c in self.emas]),
             'bbands': self.bbands.value,
             'ichimoku': self.ichimoku_cloud.value,
+            'rsi': self.rsi.value,
         }
         
     @property
@@ -142,3 +153,13 @@ class DataFrameCandle(object):
             self.ichimoku_cloud = IchimokuCloud(tenkan, kijun, senkou_a, senkou_b, chikou)
             return True
         return False
+
+    def add_rsi(self, period: int):
+
+        if len(self.closes) > period:
+            values = talib.RSI(np.asarray(self.closes), period)
+            rsi = Rsi(period,nan_to_zero(values).tolist())
+            self.rsi = rsi
+            return True
+        return False
+
