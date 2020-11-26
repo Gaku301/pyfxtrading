@@ -13,14 +13,25 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 
 if __name__ == "__main__":
-    # from app.models.dfcandle import DataFrameCandle
-    # import talib
-    # import numpy as np
+    from app.models.events import SignalEvent
+    import datetime
+    import settings
+    import constants
     
-    # df = DataFrameCandle(settings.product_code, settings.trade_duration)
-    # df.set_all_candles(100)
-    # df.add_sma(7)
-    # print(df.value)
+    now = datetime.datetime.utcnow() 
+   
+    from app.models.dfcandle import DataFrameCandle
+    df = DataFrameCandle()
+    df.set_all_candles(limit=100)
+
+    candle1 = df.candles[1]
+    candle2 = df.candles[10]
+    
+    # s = SignalEvent(time=candle1.time, product_code=settings.product_code, side=constants.BUY, price=candle1.close, units=10)
+    # s.save()
+    # s = SignalEvent(time=candle2.time, product_code=settings.product_code, side=constants.SELL, price=candle2.close, units=10)
+    # s.save()
+
 
 
     # streamThread = Thread(target=stream.stream_ingestion_data)
