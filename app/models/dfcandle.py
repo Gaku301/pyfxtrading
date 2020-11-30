@@ -308,3 +308,43 @@ class DataFrameCandle(object):
             return 0.0
         return signal_events.profit
 
+    def back_test_rsi(self, period: int, buy_thread: float, sell_thread: float):
+        if len(self.candles) <= period:
+            return None
+        
+        signal_events = SignalEvents()
+        values = talib.RSI(np.array(self.closes), period)
+
+        for i in range(1, len(self.candles)):
+            if  values[i-1] == 0 or values[i-1] == 100:
+                continue
+            
+            if values[i-1] < buy_thread and values[i] >= buy_thread:
+                signal_events.buy(product_code=self.product_code, time=self.candles[i].time, price=self.candles[i].close, units=1.0, save=False)
+
+            if values[i-1] > sell_thread and values[i] <= sell_thread:
+                signal_events.sell(product_code=self.product_code, time=self.candles[i].time, price=self.candles[i].close, units=1.0, save=False)
+                
+        return signal_events
+                
+    def optimize_rsi(self):
+        performance = 0
+        best_period =14
+        best_buy_thread = 30.0
+        best_sell_thread = 70.0
+        
+        for period in range(10, 20):
+            for buy_thread in np.arange(29.9, 30.1, 0.1):
+                for sell_thread in np.arange(69.9, 70.1, 0.1):
+                    signal_events = self.back_test_rsi(period, buy_thread, sell_thread)
+                    if signal_events is None:
+                        continue
+                    profit = signal_events.profit
+                    if performance < profit:
+                        performance = profit
+                        best_period = period
+                        best_buy_thread = buy_thread
+                        best_sell_thread = sell_thread
+
+        return performance, best_period, best_buy_thread, best_sell_thread
+                
