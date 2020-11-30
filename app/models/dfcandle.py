@@ -348,3 +348,40 @@ class DataFrameCandle(object):
 
         return performance, best_period, best_buy_thread, best_sell_thread
                 
+    def back_test_macd(self, macd_fast_period: int, macd_slow_period: int, macd_signal_period: int):
+        if len(self.candles) <= macd_fast_period or len(self.candles) <= macd_slow_period or len(self.candles) <= macd_signal_period:
+            return None
+        
+        signal_events = SignalEvents()
+        macd, macd_signal, _ = talib.MACD(np.array(self.closes), macd_slow_period, macd_fast_period, macd_signal_period)
+
+        for i in range(1, len(self.candles)):
+            if macd[i] < 0 and macd_signal[i] < macd_signal[i-1] and macd[i] >= macd_signal[i]:
+                signal_events.buy(product_code=self.product_code, time=self.candles[i].time, price=self.candles[i].close, units=1.0, save=False)
+    
+            if macd[i] > 0 and macd_signal[i] > macd_signal[i-1] and macd[i] <= macd_signal[i]:
+                signal_events.sell(product_code=self.product_code, time=self.candles[i].time, price=self.candles[i].close, units=1.0, save=False)
+    
+        return signal_events
+    
+    def optimize_macd(self):
+        performance = 0
+        best_macd_fast_period = 12
+        best_macd_slow_period = 26
+        best_macd_signal_period = 9
+        
+        for fast_period in range(10, 19):
+            for slow_period in range(20, 30):
+                for signal_period in range(5, 15):
+                    signal_events = self.back_test_macd(fast_period, slow_period, signal_period)
+                    if signal_events is None:
+                        continue
+                    profit = signal_events.profit
+                    if performance < profit:
+                        performance = profit
+                        best_macd_fast_period = fast_period
+                        best_macd_slow_period = slow_period
+                        best_macd_signal_period = signal_period
+
+        return performance, best_macd_fast_period, best_macd_slow_period, best_macd_signal_period
+ 
