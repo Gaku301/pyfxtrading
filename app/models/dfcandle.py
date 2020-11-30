@@ -276,3 +276,35 @@ class DataFrameCandle(object):
 
         return performance, best_n, best_k
  
+    def back_test_ichimoku(self):
+        if len(self.candles) <= 52:
+            return None
+        
+        signal_events = SignalEvents()
+        tenkan, kijun, senkou_a, senkou_b, chikou = ichimoku_cloud(self.closes)
+
+        for i in range(1, len(self.candles)):
+            if (
+                chikou[i-1] < self.candles[i-1].high and 
+                chikou[i] >= self.candles[i].high and 
+                senkou_a[i] < self.candles[i].low and
+                senkou_b[i] < self.candles[i].low and
+                tenkan[i] > kijun[i]):
+                signal_events.buy(product_code=self.product_code, time=self.candles[i].time, price=self.candles[i].close, units=1.0, save=False)
+
+            if (
+                chikou[i-1] > self.candles[i-1].low and 
+                chikou[i] <= self.candles[i].low and 
+                senkou_a[i] > self.candles[i].high and
+                senkou_b[i] > self.candles[i].high and
+                tenkan[i] < kijun[i]):
+                signal_events.sell(product_code=self.product_code, time=self.candles[i].time, price=self.candles[i].close, units=1.0, save=False)
+
+        return signal_events
+
+    def optimize_ichimoku(self):
+        signal_events = self.back_test_ichimoku()
+        if signal_events is None:
+            return 0.0
+        return signal_events.profit
+
