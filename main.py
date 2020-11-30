@@ -17,7 +17,7 @@ if __name__ == "__main__":
     from app.models.dfcandle import DataFrameCandle
     df = DataFrameCandle()    
     df.set_all_candles(limit=1000)
-    print(df.optimize_macd())
+    print(df.optimize_params().__dict__)
 
     # # streamThread = Thread(target=stream.stream_ingestion_data)
     # serverThread = Thread(target=start)

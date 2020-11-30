@@ -1,3 +1,4 @@
+from dict2obj import Dict2Obj
 import numpy as np
 import talib
 
@@ -384,4 +385,52 @@ class DataFrameCandle(object):
                         best_macd_signal_period = signal_period
 
         return performance, best_macd_fast_period, best_macd_slow_period, best_macd_signal_period
+
+    def optimize_params(self):
+        ema_performance, ema_period_1, ema_period_2 = self.optimize_ema()  
+        bb_performance, bb_n, bb_k = self.optimize_bb()
+        ichimoku_performance = self.optimize_ichimoku()
+        rsi_performance, rsi_period, rsi_buy_thread, rsi_sell_thread = self.optimize_rsi()
+        macd_performance, macd_fast_period,macd_slow_period, macd_signal_period = self.optimize_macd()
+
+        ema_ranking = Dict2Obj({'performance': ema_performance, 'enable': False})
+        bb_ranking = Dict2Obj({'performance': bb_performance, 'enable': False})
+        ichimoku_ranking = Dict2Obj({'performance': ichimoku_performance, 'enable': False})
+        rsi_ranking = Dict2Obj({'performance': rsi_performance, 'enable': False})
+        macd_ranking = Dict2Obj({'performance': macd_performance, 'enable': False})
+
+        rankings = [ema_ranking, bb_ranking, ichimoku_ranking, rsi_ranking, macd_ranking]
+        rankings = sorted(rankings, key=lambda o: o.performance, reverse=True)
+        
+        is_enable = False
+        for i, ranking in enumerate(rankings):
+            if i >= settings.num_ranking:
+                break
+            
+            if ranking.performance > 0:
+                ranking.enable = True
+                is_enable = True
+                
+        if not is_enable:
+            return None
+        
+        return Dict2Obj({
+            'ema_enable': ema_ranking.enable,
+            'ema_period_1': ema_period_1,
+            'ema_period_2': ema_period_2,
+            'bb_enable': bb_ranking.enable,
+            'bb_n': bb_n,
+            'bb_k': bb_k,
+            'ichimoku_enable': ichimoku_ranking.enable,
+            'rsi_enable': rsi_ranking.enable,
+            'rsi_period': rsi_period,
+            'rsi_buy_thread': rsi_buy_thread,
+            'rsi_sell_thread': rsi_sell_thread,
+            'macd_enable': macd_ranking.enable,
+            'macd_fast_period': macd_fast_period,
+            'macd_slow_period': macd_slow_period,
+            'macd_signal_period': macd_signal_period,
+        })
+        
+    
  
