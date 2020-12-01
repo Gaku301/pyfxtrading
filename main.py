@@ -14,16 +14,23 @@ logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 if __name__ == "__main__":
 
-    from app.models.dfcandle import DataFrameCandle
-    df = DataFrameCandle()    
-    df.set_all_candles(limit=1000)
-    print(df.optimize_params().__dict__)
+    from app.controllers.ai import AI
+    ai = AI(
+        product_code=settings.product_code,
+        use_percent=settings.use_percent,
+        duration=settings.trade_duration,
+        past_period=settings.past_period,
+        stop_limit_percent=settings.stop_limit_percent,
+        back_test=settings.back_test
+    )
 
-    # # streamThread = Thread(target=stream.stream_ingestion_data)
+    ai.update_optimize_params(True)
+
+    # streamThread = Thread(target=stream.stream_ingestion_data)
     # serverThread = Thread(target=start)
 
-    # # streamThread.start()
+    # streamThread.start()
     # serverThread.start()
 
-    # # streamThread.join()
+    # streamThread.join()
     # serverThread.join()
