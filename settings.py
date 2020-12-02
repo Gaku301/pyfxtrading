@@ -2,6 +2,7 @@ import configparser
 
 from utils.utils import bool_from_str
 
+
 conf = configparser.ConfigParser()
 conf.read('settings.ini')
 

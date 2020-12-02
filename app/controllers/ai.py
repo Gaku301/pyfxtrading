@@ -2,7 +2,7 @@ import datetime
 import logging
 import time
 
-import numpy as np  
+import numpy as np
 import talib
 
 from app.models.candle import factory_candle_class
@@ -30,11 +30,11 @@ def duration_seconds(duration: str) -> int:
 
 
 class AI(object):
-    
+
     def __init__(self, product_code, use_percent, duration, past_period, stop_limit_percent, back_test):
         self.API = APIClient(settings.access_token, settings.account_id)
 
-        if  back_test:
+        if back_test:
             self.signal_events = SignalEvents()
         else:
             self.signal_events = SignalEvents.get_signal_events_by_count(1)
@@ -58,11 +58,28 @@ class AI(object):
         if df.candles:
             self.optimized_trade_params = df.optimize_params()
         if self.optimized_trade_params is not None:
-            logger.info(f'aciton=update_optimize_params params-{self.optimized_trade_params.__dict__}')
-
+            logger.info(f'action=update_optimize_params params={self.optimized_trade_params.__dict__}')
 
         if is_continue and self.optimized_trade_params is None:
             time.sleep(10 * duration_seconds(self.duration))
             self.update_optimize_params(is_continue)
 
+    def buy(self, candle):
+        if self.back_test:
+            could_buy = self.signal_events.buy(self.product_code, candle.time, candle.close, 1.0, save=False)
+            return could_buy
 
+        if self.start_trade > candle.time:
+            logger.warning('action=buy status=false error=old_time')
+            return False
+
+        if not self.signal_events.can_buy(candle.time):
+            logger.warning('action=buy status=false error=previous_was_buy')
+            return False
+
+        balance = self.API.get_balance()
+        units = int(balance.available * self.use_percent)
+        order = Order(self.product_code, constants.BUY, units)
+        trade = self.API.send_order(order)
+        could_buy = self.signal_events.buy(self.product_code, candle.time, trade.price, trade.units, save=True)
+        return could_buy

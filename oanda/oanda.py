@@ -16,6 +16,7 @@ from oandapyV20.exceptions import V20Error
 import constants
 import settings
 
+
 ORDER_FILLED = 'FILLED'
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 class Balance(object):
     def __init__(self, currency, available):
         self.currency = currency
-        self.avairable = available
+        self.available = available
 
 
 class Ticker(object):
@@ -42,15 +43,14 @@ class Ticker(object):
     @property
     def time(self):
         return datetime.utcfromtimestamp(self.timestamp)
-    
+
     def truncate_date_time(self, duration):
         ticker_time = self.time
         if duration == constants.DURATION_5S:
             new_sec = math.floor(self.time.second / 5) * 5
             ticker_time = datetime(
                 self.time.year, self.time.month, self.time.day,
-                self.time.hour, self.time.minute, new_sec
-            )
+                self.time.hour, self.time.minute, new_sec)
             time_format = '%Y-%m-%d %H:%M:%S'
         elif duration == constants.DURATION_1M:
             time_format = '%Y-%m-%d %H:%M'
@@ -59,10 +59,10 @@ class Ticker(object):
         else:
             logger.warning('action=truncate_date_time error=no_datetime_format')
             return None
-        
+
         str_date = datetime.strftime(ticker_time, time_format)
         return datetime.strptime(str_date, time_format)
-        
+
 
 class Order(object):
     def __init__(self, product_code, side, units, order_type='MARKET', order_state=None, filling_transaction_id=None):
@@ -74,7 +74,7 @@ class Order(object):
         self.filling_transaction_id = filling_transaction_id
 
 
-class OrderTimeOutError(Exception):
+class OrderTimeoutError(Exception):
     """Order timeout error"""
 
 
@@ -84,13 +84,13 @@ class Trade(object):
         self.side = side
         self.price = price
         self.units = units
-        
+
 
 class APIClient(object):
-    def __init__(self, access_token, account_id, enviroment='practice'):
+    def __init__(self, access_token, account_id, environment='practice'):
         self.access_token = access_token
         self.account_id = account_id
-        self.client = API(access_token=access_token, environment=enviroment)
+        self.client = API(access_token=access_token, environment=environment)
 
     def get_balance(self) -> Balance:
         req = accounts.AccountSummary(accountID=self.account_id)
@@ -103,7 +103,7 @@ class APIClient(object):
         available = float(resp['account']['balance'])
         currency = resp['account']['currency']
         return Balance(currency, available)
-    
+
     def get_ticker(self, product_code) -> Ticker:
         params = {
             'instruments': product_code
@@ -116,8 +116,7 @@ class APIClient(object):
             raise
 
         timestamp = datetime.timestamp(
-            dateutil.parser.parse(resp['time'])
-        )
+            dateutil.parser.parse(resp['time']))
         price = resp['prices'][0]
         instrument = price['instrument']
         bid = float(price['bids'][0]['price'])
@@ -136,31 +135,28 @@ class APIClient(object):
         except V20Error as e:
             logger.error(f'action=get_candle_volume error={e}')
             raise
-        
+
         return int(resp['candles'][0]['volume'])
 
     def get_realtime_ticker(self, callback):
         req = PricingStream(accountID=self.account_id, params={
-            'instruments': settings.product_code
-        })
+            'instruments': settings.product_code})
         try:
             for resp in self.client.request(req):
                 if resp['type'] == 'PRICE':
                     timestamp = datetime.timestamp(
-                        dateutil.parser.parse(resp['time'])
-                    )
+                        dateutil.parser.parse(resp['time']))
                     instrument = resp['instrument']
                     bid = float(resp['bids'][0]['price'])
                     ask = float(resp['asks'][0]['price'])
                     volume = self.get_candle_volume()
                     ticker = Ticker(instrument, timestamp, bid, ask, volume)
                     callback(ticker)
-                # print(resp)
 
         except V20Error as e:
             logger.error(f'action=get_realtime_ticker error={e}')
             raise
-           
+
     def send_order(self, order: Order) -> Trade:
         if order.side == constants.BUY:
             side = 1
@@ -182,9 +178,10 @@ class APIClient(object):
             raise
         order_id = resp['orderCreateTransaction']['id']
         order = self.wait_order_complete(order_id)
+
         if not order:
             logger.error('action=send_order error=timeout')
-            raise OrderTimeOutError
+            raise OrderTimeoutError
 
         return self.trade_details(order.filling_transaction_id)
 
@@ -218,7 +215,7 @@ class APIClient(object):
             filling_transaction_id=resp['order'].get('fillingTransactionID')
         )
         return order
- 
+
     def trade_details(self, trade_id) -> Trade:
         req = trades.TradeDetails(self.account_id, trade_id)
         try:
@@ -227,7 +224,7 @@ class APIClient(object):
         except V20Error as e:
             logger.error(f'action=trade_details error={e}')
             raise
-        
+
         trade = Trade(
             trade_id=trade_id,
             side=constants.BUY if float(resp['trade']['currentUnits']) > 0 else constants.SELL,
@@ -237,14 +234,14 @@ class APIClient(object):
         return trade
 
     def get_open_trade(self) -> list:
-        req = trades.OpenTrades(self.account_id)        
+        req = trades.OpenTrades(self.account_id)
         try:
             resp = self.client.request(req)
             logger.info(f'action=get_open_trade resp={resp}')
         except V20Error as e:
             logger.error(f'action=get_open_trade error={e}')
             raise
-        
+
         trades_list = []
         for trade in resp['trades']:
             trades_list.insert(0, Trade(
@@ -254,7 +251,7 @@ class APIClient(object):
                 price=float(trade['price'])
             ))
         return trades_list
-    
+
     def trade_close(self, trade_id) -> Trade:
         req = trades.TradeClose(self.account_id, trade_id)
         try:
@@ -271,4 +268,3 @@ class APIClient(object):
             price=float(resp['orderFillTransaction']['price'])
         )
         return trade
- 

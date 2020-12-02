@@ -15,7 +15,7 @@ api = APIClient(settings.access_token, settings.account_id)
 
 
 class StreamData(object):
-    
+
     def stream_ingestion_data(self):
         api.get_realtime_ticker(callback=self.trade)
 
@@ -25,5 +25,6 @@ class StreamData(object):
             is_created = create_candle_with_duration(ticker.product_code, duration, ticker)
             print(is_created)
 
-            
+
+# singleton
 stream = StreamData()

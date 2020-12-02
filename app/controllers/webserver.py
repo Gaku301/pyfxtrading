@@ -35,7 +35,7 @@ def api_make_handler():
 
     if limit < 0 or limit > 1000:
         limit = 1000
-        
+
     duration = request.args.get('duration')
     if not duration:
         duration = constants.DURATION_1M
@@ -43,7 +43,7 @@ def api_make_handler():
     df = DataFrameCandle(product_code, duration_time)
     df.set_all_candles(limit)
 
-    sma = request.args.get('sma')    
+    sma = request.args.get('sma')
     if sma:
         str_sma_period_1 = request.args.get('smaPeriod1')
         str_sma_period_2 = request.args.get('smaPeriod2')
@@ -64,7 +64,7 @@ def api_make_handler():
         df.add_sma(period_2)
         df.add_sma(period_3)
 
-    ema = request.args.get('ema')    
+    ema = request.args.get('ema')
     if ema:
         str_ema_period_1 = request.args.get('emaPeriod1')
         str_ema_period_2 = request.args.get('emaPeriod2')
@@ -134,10 +134,10 @@ def api_make_handler():
     events = request.args.get('events')
     if events:
         df.add_events(df.candles[0].time)
-    
-    return jsonify(df.value), 200
-    
 
-    
+    return jsonify(df.value), 200
+
+
 def start():
+    # app.run(host='127.0.0.1', port=settings.web_port, threaded=True)
     app.run(host='0.0.0.0', port=settings.web_port, threaded=True)

@@ -15,8 +15,8 @@ import settings
 
 
 class SignalEvent(Base):
-    __tablename__ = 'signal_event'    
-    
+    __tablename__ = 'signal_event'
+
     time = Column(DateTime, primary_key=True, nullable=False)
     product_code = Column(String)
     side = Column(String)
@@ -25,7 +25,7 @@ class SignalEvent(Base):
 
     def save(self):
         with session_scope() as session:
-            session.add(self)    
+            session.add(self)
 
     @property
     def value(self):
@@ -41,10 +41,10 @@ class SignalEvent(Base):
         return dict_values
 
     @classmethod
-    def get_signal_events_by_count(cls, count, product_code=settings.product_code):
+    def get_signal_events_by_count(cls, count, prduct_code=settings.product_code):
         with session_scope() as session:
-            rows = session.query(cls).filter(cls.product_code == product_code).order_by(desc(cls.time)).limit(count).all()
-            if rows is  None:
+            rows = session.query(cls).filter(cls.product_code == prduct_code).order_by(desc(cls.time)).limit(count).all()
+            if rows is None:
                 return []
             rows.reverse()
             return rows
@@ -56,62 +56,61 @@ class SignalEvent(Base):
 
             if rows is None:
                 return []
+
             return rows
 
-    
+
 class SignalEvents(object):
     def __init__(self, signals=None):
         if signals is None:
             self.signals = []
         else:
             self.signals = signals
-            
+
     def can_buy(self, time):
         if len(self.signals) == 0:
             return True
-        
-        last_signal = self.signals[-1] 
+
+        last_signal = self.signals[-1]
         if last_signal.side == constants.SELL and last_signal.time < time:
             return True
-        
+
         return False
-    
+
     def can_sell(self, time):
         if len(self.signals) == 0:
             return False
-        
+
         last_signal = self.signals[-1]
         if last_signal.side == constants.BUY and last_signal.time < time:
             return True
-        
+
         return False
-    
+
     def buy(self, product_code, time, price, units, save):
         if not self.can_buy(time):
             return False
-        
+
         signal_event = SignalEvent(
-            time=time, product_code=product_code, side=constants.BUY, price=price, units=units
-        )
+            time=time, product_code=product_code, side=constants.BUY, price=price, units=units)
         if save:
             signal_event.save()
 
         self.signals.append(signal_event)
         return True
-    
+
     def sell(self, product_code, time, price, units, save):
         if not self.can_sell(time):
             return False
-        
+
         signal_event = SignalEvent(
-            time=time, product_code=product_code, side=constants.SELL, price=price, units=units
-        )                    
+            time=time, product_code=product_code, side=constants.SELL, price=price, units=units)
         if save:
             signal_event.save()
-            
+
         self.signals.append(signal_event)
         return True
-    
+
     @staticmethod
     def get_signal_events_by_count(count:int):
         signal_events = SignalEvent.get_signal_events_by_count(count)
@@ -151,8 +150,9 @@ class SignalEvents(object):
         profit = self.profit
         if not self.profit:
             profit = None
-            
+
         return {
             'signals': signals,
             'profit': profit
         }
+
