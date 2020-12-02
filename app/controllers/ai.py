@@ -107,3 +107,6 @@ class AI(object):
 
         could_sell = self.signal_events.sell(self.product_code, candle.time, sum_price/units, units, save=True)
         return could_sell
+
+    def trade(self):
+        logger.info('action=trade status=run')
