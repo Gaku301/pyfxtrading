@@ -83,3 +83,27 @@ class AI(object):
         trade = self.API.send_order(order)
         could_buy = self.signal_events.buy(self.product_code, candle.time, trade.price, trade.units, save=True)
         return could_buy
+
+    def sell(self, candle):
+        if self.back_test:
+            could_sell = self.signal_events.sell(self.product_code, candle.time, candle.close, 1.0, save=False)
+            return could_sell
+
+        if self.start_trade > candle.time:
+            logger.warning('action=sell status=false error=old_time')
+            return False
+
+        if not self.signal_events.can_sell(candle.time):
+            logger.warning('action=sell status=false error=previous_was_sell')
+            return False
+
+        trades = self.API.get_open_trade() 
+        sum_price = 0
+        units = 0
+        for trade in trades:
+            closed_trade = self.API.trade_close(trade.trade_id)
+            sum_price += closed_trade.price * abs(closed_trade.units)
+            units += abs(closed_trade.units)
+
+        could_sell = self.signal_events.sell(self.product_code, candle.time, sum_price/units, units, save=True)
+        return could_sell

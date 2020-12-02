@@ -26,7 +26,9 @@ if __name__ == "__main__":
     df = DataFrameCandle()
     df.set_all_candles(limit=1000)
     candle = df.candles[-1]
-    ai.buy(candle)
+    candle.time  += timedelta(minutes=1)
+    ai.sell(candle)
+    # ai.buy(candle)
 
     # streamThread = Thread(target=stream.stream_ingestion_data)
     # serverThread = Thread(target=start)
